@@ -1,55 +1,113 @@
-# rag-knowledge-engine
+# RAG Knowledge Engine
 
-A Retrieval-Augmented Generation (RAG) knowledge engine.
+A production-grade Retrieval-Augmented Generation (RAG) pipeline with a modern Next.js frontend.
 
-## Overview
+## Stack
 
-This project implements a RAG pipeline that combines a retrieval system with a generative language model to produce accurate, context-grounded responses from a custom knowledge base.
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16 · TypeScript · Tailwind CSS v4 |
+| Backend | FastAPI · Python 3.11 |
+| LLM Orchestration | LangChain · GPT-4o |
+| Vector DB | Pinecone (serverless) |
+| Hybrid Search | BM25 (rank-bm25) + Vector (cosine) via RRF |
+| Embeddings | OpenAI `text-embedding-3-small` |
+| Infra | Docker · docker-compose · AWS-ready |
 
 ## Features
 
-- Document ingestion and chunking
-- Vector embedding and storage
-- Semantic similarity search
-- LLM-powered answer generation with retrieved context
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.9+
-- An OpenAI (or compatible) API key
-- A vector database (e.g., FAISS, Chroma, Pinecone)
-
-### Installation
-
-```bash
-git clone https://github.com/krishna2700/rag-knowledge-engine.git
-cd rag-knowledge-engine
-pip install -r requirements.txt
-```
-
-### Usage
-
-```bash
-python main.py --query "Your question here"
-```
+- **Multi-format ingestion** — PDF, DOCX, HTML, Markdown, TXT
+- **Semantic chunking** — `RecursiveCharacterTextSplitter` with configurable overlap
+- **Hybrid search** — BM25 + vector similarity fused via Reciprocal Rank Fusion (RRF)
+- **Streaming responses** — Server-Sent Events (SSE) from FastAPI → Next.js
+- **Source citations** — Every answer links back to source chunks with relevance scores
+- **Rate limiting** — `slowapi` per-IP rate limiting
+- **Structured logging** — `structlog` with request context propagation
 
 ## Project Structure
 
 ```
-rag-knowledge-engine/
-├── README.md
-├── requirements.txt
-├── main.py
-├── ingestion/
-│   └── loader.py
-├── retrieval/
-│   └── retriever.py
-└── generation/
-    └── generator.py
+apps/
+├── api/          # FastAPI backend
+│   └── app/
+│       ├── core/           # Config, logging
+│       ├── api/v1/routes/  # HTTP endpoints
+│       ├── domain/         # Business logic (documents, query)
+│       ├── infrastructure/ # Pinecone, LangChain, parsers
+│       └── shared/         # Exceptions, response models, middleware
+└── web/          # Next.js frontend
+    └── src/
+        ├── app/            # App Router pages
+        ├── components/     # UI components (chat, documents, layout)
+        ├── features/       # Feature hooks (useChat, useDocuments, useUpload)
+        ├── lib/            # API client, utils, constants
+        └── types/          # TypeScript types
 ```
 
-## License
+## Quick Start
 
-MIT License
+### 1. Configure environment
+
+```bash
+cp .env.example .env
+# Fill in OPENAI_API_KEY and PINECONE_API_KEY
+```
+
+### 2. Run with Docker Compose
+
+```bash
+docker-compose up --build
+```
+
+- Frontend: http://localhost:3000
+- API: http://localhost:8000
+- API Docs: http://localhost:8000/docs (debug mode only)
+
+### 3. Run locally
+
+**Backend:**
+```bash
+cd apps/api
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+**Frontend:**
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+## API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/health` | Health check |
+| `POST` | `/api/v1/documents/` | Upload & ingest document |
+| `GET` | `/api/v1/documents/` | List all documents |
+| `GET` | `/api/v1/documents/{id}` | Get document by ID |
+| `DELETE` | `/api/v1/documents/{id}` | Delete document + vectors |
+| `POST` | `/api/v1/query/stream` | Streaming RAG query (SSE) |
+| `POST` | `/api/v1/query/` | Non-streaming RAG query |
+
+## Architecture
+
+```
+User Query
+    │
+    ▼
+Hybrid Search
+    ├── BM25 (lexical)
+    └── Pinecone (semantic)
+         │
+         ▼
+    RRF Fusion
+         │
+         ▼
+  LangChain RAG Chain
+    (GPT-4o + context)
+         │
+         ▼
+  SSE Stream → Frontend
+```
