@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { Header } from "@/components/layout/header";
 import { DocumentUploader } from "@/components/documents/document-uploader";
-import { DocumentList } from "@/components/documents/document-list";
+import { DocumentCard } from "@/components/documents/document-card";
 import { useDocuments } from "@/features/documents/use-documents";
 import type { Document } from "@/types";
 
@@ -17,77 +17,106 @@ export default function DocumentsPage() {
     [refetch]
   );
 
+  const readyCount = documents.filter((d) => d.status === "ready").length;
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <Header
         title="Documents"
-        subtitle={`${documents.length} document${documents.length !== 1 ? "s" : ""} in knowledge base`}
+        subtitle={`${documents.length} document${documents.length !== 1 ? "s" : ""} · ${readyCount} ready`}
       />
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="mx-auto max-w-2xl space-y-6">
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-navy-700">Upload Document</h2>
+        <div className="mx-auto max-w-2xl space-y-8">
+
+          {/* Stats row */}
+          {documents.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 animate-fade-up">
+              {[
+                { label: "Total", value: documents.length, color: "#818cf8" },
+                { label: "Ready", value: readyCount, color: "#10b981" },
+                { label: "Processing", value: documents.filter((d) => d.status === "processing" || d.status === "pending").length, color: "#38bdf8" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl p-4 text-center"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <p className="text-2xl font-bold" style={{ color: stat.color }}>
+                    {stat.value}
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: "#334155" }}>
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Upload section */}
+          <section className="animate-fade-up" style={{ animationDelay: "0.05s" }}>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest" style={{ color: "#334155" }}>
+              Upload Document
+            </p>
             <DocumentUploader onUploaded={handleUploaded} />
           </section>
 
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-navy-700">Knowledge Base</h2>
+          {/* Knowledge base section */}
+          <section className="animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest" style={{ color: "#334155" }}>
+              Knowledge Base
+            </p>
+
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-20 animate-pulse rounded-xl bg-navy-50" />
+                  <div
+                    key={i}
+                    className="h-20 rounded-2xl skeleton"
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  />
                 ))}
               </div>
             ) : error ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <div
+                className="rounded-2xl px-4 py-4 text-sm animate-fade-in"
+                style={{
+                  background: "rgba(244,63,94,0.08)",
+                  border: "1px solid rgba(244,63,94,0.2)",
+                  color: "#fda4af",
+                }}
+              >
                 {error}
               </div>
             ) : documents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-navy-200 py-12 text-center">
-                <span className="text-3xl">📭</span>
+              <div
+                className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed py-14 text-center animate-fade-in"
+                style={{ borderColor: "rgba(255,255,255,0.07)" }}
+              >
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-navy-700">No documents yet</p>
-                  <p className="text-xs text-navy-400">Upload a document above to get started</p>
+                  <p className="text-sm font-medium" style={{ color: "#475569" }}>No documents yet</p>
+                  <p className="text-xs mt-1" style={{ color: "#334155" }}>Upload a document above to get started</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-start gap-4 rounded-xl border border-navy-100 bg-white p-4 hover:border-navy-200 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-alice-blue border border-navy-100 text-xl">
-                      {doc.metadata.file_type === "pdf" ? "📕" : doc.metadata.file_type === "docx" ? "📘" : "📄"}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-navy-800">{doc.title}</p>
-                      <p className="mt-1 text-xs text-navy-400">
-                        {(doc.metadata.file_size_bytes / 1024).toFixed(1)} KB
-                        {doc.metadata.chunk_count > 0 && ` · ${doc.metadata.chunk_count} chunks`}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        doc.status === "ready"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : doc.status === "processing"
-                          ? "bg-blue-100 text-blue-800"
-                          : doc.status === "failed"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {doc.status}
-                    </span>
-                    <button
-                      onClick={() => deleteDocument(doc.id)}
-                      className="shrink-0 rounded-lg p-1.5 text-navy-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                      ✕
-                    </button>
-                  </div>
+                  <DocumentCard key={doc.id} document={doc} onDelete={deleteDocument} />
                 ))}
               </div>
             )}

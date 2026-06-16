@@ -2,15 +2,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-500 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        primary: "bg-navy-700 text-white hover:bg-navy-800 active:bg-navy-900",
-        secondary: "bg-alice-blue border border-navy-200 text-navy-700 hover:bg-navy-50",
-        ghost: "text-navy-600 hover:bg-navy-50 hover:text-navy-800",
-        danger: "bg-red-600 text-white hover:bg-red-700",
-        outline: "border border-navy-300 text-navy-700 hover:bg-alice-blue",
+        primary:
+          "text-white",
+        secondary:
+          "text-slate-300 hover:text-white",
+        ghost:
+          "text-slate-400 hover:text-slate-200",
+        danger:
+          "text-white",
+        outline:
+          "text-slate-300 hover:text-white",
       },
       size: {
         sm: "h-8 px-3 text-xs",
@@ -27,6 +32,32 @@ interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {}
 
-export const Button = ({ className, variant, size, ...props }: ButtonProps) => (
-  <button className={cn(buttonVariants({ variant, size }), className)} {...props} />
+const variantStyles: Record<string, React.CSSProperties> = {
+  primary: {
+    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+    boxShadow: "0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+  },
+  secondary: {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.1)",
+  },
+  ghost: {
+    background: "transparent",
+  },
+  danger: {
+    background: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)",
+    boxShadow: "0 0 12px rgba(244,63,94,0.3)",
+  },
+  outline: {
+    background: "transparent",
+    border: "1px solid rgba(255,255,255,0.12)",
+  },
+};
+
+export const Button = ({ className, variant = "primary", size, style, ...props }: ButtonProps) => (
+  <button
+    className={cn(buttonVariants({ variant, size }), className)}
+    style={{ ...variantStyles[variant ?? "primary"], ...style }}
+    {...props}
+  />
 );
