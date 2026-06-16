@@ -4,7 +4,11 @@ import "./globals.css";
 import "./theme.css";
 import { Sidebar } from "@/components/layout/sidebar";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "RAG Knowledge Engine",
@@ -14,7 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="flex h-screen overflow-hidden bg-alice-blue font-sans antialiased">
+      <body className="mesh-bg flex h-screen overflow-hidden font-sans antialiased">
         <Sidebar />
         <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
       </body>
