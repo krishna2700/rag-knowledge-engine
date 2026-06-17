@@ -46,14 +46,18 @@ async def hybrid_search(
 
     if all_chunks:
         corpus = [_tokenize(c["content"]) for c in all_chunks]
-        bm25 = BM25Okapi(corpus)
-        bm25_scores = bm25.get_scores(_tokenize(query))
-        top_bm25_indices = np.argsort(bm25_scores)[::-1][: top_k * 2]
-        bm25_results = [
-            {**all_chunks[i], "score": float(bm25_scores[i])}
-            for i in top_bm25_indices
-            if bm25_scores[i] > 0
-        ]
+        corpus = [tokens if tokens else [""] for tokens in corpus]
+        try:
+            bm25 = BM25Okapi(corpus)
+            bm25_scores = bm25.get_scores(_tokenize(query) or [""])
+            top_bm25_indices = np.argsort(bm25_scores)[::-1][: top_k * 2]
+            bm25_results = [
+                {**all_chunks[i], "score": float(bm25_scores[i])}
+                for i in top_bm25_indices
+                if bm25_scores[i] > 0
+            ]
+        except Exception:
+            bm25_results = []
     else:
         bm25_results = []
 
