@@ -1,16 +1,43 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { queryApi } from "@/lib/api-client";
 import type { ChatMessage, SourceChunk, StreamChunk } from "@/types";
 
 const generateId = () => Math.random().toString(36).slice(2);
+const STORAGE_KEY = "rag-chat-history";
+
+const loadMessages = (): ChatMessage[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as ChatMessage[];
+    return parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp), isStreaming: false }));
+  } catch {
+    return [];
+  }
+};
+
+const saveMessages = (messages: ChatMessage[]) => {
+  try {
+    const toSave = messages.filter((m) => !m.isStreaming);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch {}
+};
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    setMessages(loadMessages());
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) saveMessages(messages);
+  }, [messages]);
 
   const sendMessage = useCallback(async (query: string, documentIds?: string[]) => {
     if (!query.trim() || isStreaming) return;
@@ -94,6 +121,7 @@ export const useChat = () => {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
   }, []);
 
   return { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages };
